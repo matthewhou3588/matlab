@@ -27,13 +27,13 @@ z_output = 1 + ones(1, length(Z));   % 初始化所有的ap的z值属于"medium"
 for i = 1:length(Z)
     if z_normalized(1,i) <= z_median     % 如果第i个ap的z小于所有的z的median,并且该z与median的相似度大于百分之五十，则该ap的z值属于"low"
         tmp = (z_normalized(1,i) - z_median) / (z_median - min(z_normalized));
-        if tmp < -0.05
+        if tmp < -0.5
             z_output(1,i) = 1;
         end
     end
     if z_normalized(1,i) > z_median      % 如果第i个ap的z大于所有的z的median,并且该z与median的相似度大于百分之五十，则该ap的z值属于"high"
         tmp = (z_normalized(1,i) - z_median) / (max(z_normalized) - z_median);
-        if tmp > 0.05
+        if tmp > 0.5
             z_output(1,i) = 3;
         end
     end     
@@ -43,14 +43,14 @@ k_output = 1 + ones(1, length(K));   % 初始化所有的ap的k值属于"medium"
 for i = 1:length(K)
    if k_normalized(1,i) <= k_median
         tmp = (k_normalized(1,i) - k_median) / (k_median - min(k_normalized));
-        if tmp < -0.05
+        if tmp < -0.5
             k_output(1,i) = 1;
         end      
    end
    
    if k_normalized(1,i) > k_median
         tmp = (k_normalized(1,i) - k_median) / (max(k_normalized) - k_median);
-        if tmp > 0.05
+        if tmp > 0.5
             k_output(1,i) = 3;
         end       
    end
