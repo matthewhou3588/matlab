@@ -1,14 +1,15 @@
+function best_variables = run_pso(zn, kn) 
 tic
 clc
 clear all
 close all
 rng default
 
-LB=[0 0 0 0 0 0];               %lower bounds of variables
-UB=[100 100 100 100 100 100];   %upper bounds of variables
+LB=[0 0 0 0 0 0 0 0 0 0 0 0];                           %lower bounds of variables
+UB=[100 100 100 100 100 100 100 100 100 100 100 100];   %upper bounds of variables
 
 % pso parameters values
-m=6;        % number of variables
+m=12;        % number of variables
 n=100;      % population size
 inertia_weight = 0.73; 
 wmax=0.9;   % inertia weight
@@ -31,9 +32,10 @@ for run=1:maxrun
     x=x0;       % initial population   % position of every particle in pso
     v=0.1*x0;   % initial velocity     % velocity of every particle in pso
     for i=1:n
-        f0(i,1)=ofun(x0(i,:));
+        % f0(i,1)=ofun(x0(i,:));
+        f0(i,1)=pso_flc1_costfunction(x0(i,:), zn, kn);
     end
-    [fmin0,index0]=min(f0);
+    [fmax0,index0]=max(f0);
     pbest=x0;           % initial pbest
     gbest=x0(index0,:); % initial gbest
     % pso initialization------------------------------------------------end
@@ -74,43 +76,44 @@ for run=1:maxrun
          
         % evaluating fitness
         for i=1:n
-            f(i,1)=ofun(x(i,:));
+            f(i,1)=pso_flc1_costfunction(x(i,:), zn, kn);
         end
         
         % updating pbest and fitness
+        % in papaer: the aim is to maximize node reliability
         for i=1:n
-            if f(i,1)<f0(i,1)
+            if f(i,1)>f0(i,1)
                 pbest(i,:)=x(i,:);
                 f0(i,1)=f(i,1);
             end
         end
         
-        [fmin,index]=min(f0);   % finding out the best particle
-        ffmin(ite,run)=fmin;    % storing best fitness
+        [fmax,index]=max(f0);   % finding out the best particle: maximize node reliability
+        ffmax(ite,run)=fmax;    % storing best fitness
         ffite(run)=ite;         % storing iteration count
 
         % updating gbest and best fitness
-        if fmin<fmin0
+        if fmax>fmax0
             gbest=pbest(index,:);
-            fmin0=fmin;
+            fmax0=fmax;
         end
         
         % calculating tolerance
         if ite>100;
-            tolerance=abs(ffmin(ite-100,run)-fmin0);
+            tolerance=abs(ffmax(ite-100,run)-fmax0);
         end
         
         % displaying iterative results
         if ite==1
             disp(sprintf('Iteration Best particle Objective fun'));
         end
-        disp(sprintf('%8g %8g %8.4f',ite,index,fmin0));
+        disp(sprintf('%8g %8g %8.4f',ite,index,fmax0));
         ite=ite+1;
     end
     % pso algorithm-----------------------------------------------------end
     gbest;
     %fvalue=10*(gbest(1)-1)^2+20*(gbest(2)-2)^2+30*(gbest(3)-3)^2;
-    fvalue=ofun(gbest);
+    fvalue=pso_flc1_costfunction(gbest, zn, kn);
     fff(run)=fvalue;
     rgbest(run,:)=gbest;
     disp(sprintf('--------------------------------------'));
@@ -119,14 +122,16 @@ end
 disp(sprintf('\n'));
 disp(sprintf('*********************************************************'));
 disp(sprintf('Final Results-----------------------------'));
-[bestfun,bestrun]=min(fff)
+[bestfun,bestrun]=max(fff)
 best_variables=rgbest(bestrun,:)
 disp(sprintf('*********************************************************'));
 toc
 
 % PSO convergence characteristic
-plot(ffmin(1:ffite(bestrun),bestrun),'-k');
+plot(ffmax(1:ffite(bestrun),bestrun),'-k');
 xlabel('Iteration');
 ylabel('Fitness function value');
 title('PSO convergence characteristic')
 %############################################################---------end
+
+end
