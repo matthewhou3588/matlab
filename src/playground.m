@@ -86,5 +86,29 @@ for k = 1:ap.num
     [Z(1,k), K(1,k)] = getRSSIParam(x, y);
 end
 
+%% get every ap's reliability in offline
 [ result, z_output, k_output ] = flc1( Z, K );
+
+
+%% get every ap's membership function of flc1 in offline
+membership_args = ones(ap.num, 9);
+for k = 1:ap.num
+    retval = run_pso(Z(1,k), K(1,k));
+    
+    membership_args(k,1) = 0;                % aL
+    membership_args(k,2) = retval(1,2);  % bL
+    membership_args(k,3) = retval(1,1);  % cL
+
+    membership_args(k,4) = retval(1,3);  % aM
+    membership_args(k,5) = 50;               % bM
+    membership_args(k,6) = retval(1,4);  % cM
+
+    membership_args(k,7) = retval(1,5);  % aH
+    membership_args(k,8) = retval(1,6);  % bH
+    membership_args(k,9) = 100;              % cH
+    
+end
+
+
+
 
