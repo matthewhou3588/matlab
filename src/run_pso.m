@@ -1,8 +1,8 @@
 function best_variables = run_pso(zn, kn) 
 tic
 clc
-clear all
-close all
+%clear all
+ close all
 rng default
 
 LB=[0 0 0 0 0 0 0 0 0 0 0 0];                           %lower bounds of variables
@@ -21,7 +21,7 @@ c2=1.48;       % acceleration factor
 maxite=20;    % set maximum number of iteration
 maxrun=10;      % set maximum number of runs need to be
 for run=1:maxrun
-    run
+    %run
     % pso initialization----------------------------------------------start
     for i=1:n
         for j=1:m
@@ -104,10 +104,10 @@ for run=1:maxrun
         end
         
         % displaying iterative results
-        if ite==1
-            disp(sprintf('Iteration Best particle Objective fun'));
-        end
-        disp(sprintf('%8g %8g %8.4f',ite,index,fmax0));
+%         if ite==1
+%             disp(sprintf('Iteration Best particle Objective fun'));
+%         end
+%         disp(sprintf('%8g %8g %8.4f',ite,index,fmax0));
         ite=ite+1;
     end
     % pso algorithm-----------------------------------------------------end
@@ -116,7 +116,7 @@ for run=1:maxrun
     fvalue=pso_flc1_costfunction(gbest, zn, kn);
     fff(run)=fvalue;
     rgbest(run,:)=gbest;
-    disp(sprintf('--------------------------------------'));
+%     disp(sprintf('--------------------------------------'));
 end
 % pso main program------------------------------------------------------end
 disp(sprintf('\n'));
@@ -127,11 +127,13 @@ best_variables=rgbest(bestrun,:)
 disp(sprintf('*********************************************************'));
 toc
 
-% PSO convergence characteristic
-plot(ffmax(1:ffite(bestrun),bestrun),'-k');
-xlabel('Iteration');
-ylabel('Fitness function value');
-title('PSO convergence characteristic')
+%% PSO convergence characteristic
+% plot(ffmax(1:ffite(bestrun),bestrun),'-k');
+% xlabel('Iteration');
+% ylabel('Fitness function value');
+% title('PSO convergence characteristic')
+
+
 %############################################################---------end
 
 end
