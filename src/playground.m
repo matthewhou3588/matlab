@@ -81,18 +81,21 @@ end
 Z = zeros(1, ap.num);
 K = zeros(1, ap.num);
 for k = 1:ap.num
-    x = log10(grid.dist(:,k).');
+    x = log10(grid.dist(:,k).');  
     y = grid.rssi(:,k).';
     [Z(1,k), K(1,k)] = getRSSIParam(x, y);
 end
 
+Z
+K
+
 %% get every ap's reliability in offline
-[ result, z_output, k_output ] = flc1( Z, K );
+% [ result, z_output, k_output ] = flc1( Z, K );
 
 
 %% get every ap's membership function of flc1 in offline
 membership_args = ones(ap.num, 9);
-for k = 1:ap.num
+for k = 1:2  %ap.num
     retval = run_pso(Z(1,k), K(1,k));
     
     membership_args(k,1) = 0;                % aL
@@ -107,8 +110,46 @@ for k = 1:ap.num
     membership_args(k,8) = retval(1,6);  % bH
     membership_args(k,9) = 100;              % cH
     
+    % print
+    membership_args(k,:)
 end
 
+%% RSSI compute in online
+%% the first step: beacon node is grid
+%  the RSSI values received by the beacon are computed. Only the lowest values
+%  (in absolute value), under the 25th percentile are considered.
+rowpercentile = quantile(grid.rssi, 0.25, 2);  % for every beacon node, get the 25th percentile of all ap
 
+%% second step, the distance between the unknown node and the beacon n is estimated
+w_unknow_beancon = ue.dist;
+
+%% third step 
+% for each cell, the value kwˆn −wn(i, j)k is
+% associated to it in order to create an error map related to anchor n
+
+for i=1:ue.num  % loccate every unknown node each for. here we think unknow node(paper) is ue
+    
+   errmap = zeros(grid.num, ap.num);   % the ith ue's error map between this ue and every grid cell
+   for j=1:grid.num
+       errmap(j,:) = w_unknow_beancon(i,:) - grid.dist(j,:); 
+   end
+    
+   %% final step
+   proximity_index_matrix = zeros(grid.num, ap.num); 
+   strongestRSSIfromUnknow = min(abs(ue.rssi(i,:)));
+   for j=1:grid.num      
+       for t=1:ap.num
+           proximity_index_matrix(j,t) = strongestRSSIfromUnknow / grid.rssi(j,t);
+       end       
+   end
+
+   % normalize proximity_index
+   maxv = max(proximity_index_matrix);
+   minv = min(proximity_index_matrix);   
+   proximity_index_matrix_normalized = (proximity_index_matrix - minv) / (maxv - minv);     
+
+   
+   
+end
 
 
