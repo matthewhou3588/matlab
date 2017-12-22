@@ -42,7 +42,8 @@ end
 
 err_map_dist = zeors(sqrt(env.area)/s * sqrt(env.area)/s, grid.num);
 for k = 1:size(err_map_dist)(1)  
-    err_map_dist(k,:) = abs(anchor_unknown_estimated_dist - cellcenter_anchor_dist(k,:));
+    % err_map_dist(k,:) = abs(anchor_unknown_estimated_dist - cellcenter_anchor_dist(k,:));
+    err_map_dist(k,:) = (anchor_unknown_estimated_dist - cellcenter_anchor_dist(k,:)).^2;
 end
 
 
@@ -51,7 +52,22 @@ end
 %% the weighting result is the outpout of the flc2
 
 % 暂时假设所有的grid的reliability如下：
-anchor_reliability = zeros(1, grid.num);
+anchor_reliability = unifrnd(0, 1, 1, grid.num); 
+
+%% 5.
+W_i_j = zeros(1, size(err_map_dist)(1))  % every cell's result, and then find the min from all the cell
+for k = 1:size(err_map_dist)(1)  
+    tmp = 0;
+    for j = 1:grid.num;      %% tmp is the anchor node j's W
+        tmp = tmp + anchor_reliability(1,j) * err_map_dist(k,j);  
+    end
+    W_i_j(1, k) = tmp;  % the kth cell's W
+end
+
+% find the min W (the least error) from all cell
+[min_error, cell_index] = min(W_i_j);
+unknown_node_location = cell_center(cell_index,:);
+
 
 for i=1:ue.num  % loccate every unknown node each for. here we think unknow node(paper) is ue
     
