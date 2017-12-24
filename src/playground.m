@@ -1,128 +1,149 @@
-clear 
-close all 
+function best_variables = run_pso(zn, kn) 
+%% each time optimize one anchor node
+tic
+clc
+%clear all
+ close all
+rng default
 
-%% variables that you could change
-ap.num = 25;    % the number of access points (must be square of interger)
-grid.num = 100;  % the number of fingerprinting grids (must be square of interger)
-ue.density = ap.num;  % the density of user equipments
-ap.tx_power = 0.2*ones(1,ap.num);  % the tx power of access points in Watts
-% receiver.num = 1; % the number of the recevier node
-% receiver.pos = [0 0]; % the location of the recevier node
+LB=[0 0 0 0 0 0 0 0 0 0 0 0];                           %lower bounds of variables
+UB=[100 100 100 100 100 100 100 100 100 100 100 100];   %upper bounds of variables
 
+% pso parameters values
+m=12;        % number of variables
+% n=100;      % population size
+n=5;      % population size
+inertia_weight = 0.73; 
+wmax=0.9;   % inertia weight
+wmin=0.4;   % inertia weight
+c1=1.48;       % acceleration factor
+c2=1.48;       % acceleration factor
 
-
-%% constants that you do not need to change
-env.area = 1;   % the playground area in square km
-env.dc = [6,4*6*1.25/(3*10^8/(2*10^9))];  % multi-slope pathloss threshold
-
-%% generating the map
-ap.xpos = linspace(-sqrt(env.area)/2,sqrt(env.area)/2,2*sqrt(ap.num)-1+2);
-ap.ypos = linspace(-sqrt(env.area)/2,sqrt(env.area)/2,2*sqrt(ap.num)-1+2);
-ap.xpos = ap.xpos(2:2:end);
-ap.ypos = ap.ypos(2:2:end);
-ap.points = [repmat(ap.xpos,1,sqrt(ap.num));reshape(repmat(ap.ypos,sqrt(ap.num),1),[ap.num,1]).'].';
-
-grid.xpos = linspace(-sqrt(env.area)/2,sqrt(env.area)/2,2*sqrt(grid.num)-1+2);
-grid.ypos = linspace(-sqrt(env.area)/2,sqrt(env.area)/2,2*sqrt(grid.num)-1+2);
-grid.xpos = grid.xpos(2:2:end);
-grid.ypos = grid.ypos(2:2:end);
-grid.points = [repmat(grid.xpos,1,sqrt(grid.num));reshape(repmat(grid.ypos,sqrt(grid.num),1),[grid.num,1]).'].';
-
-ue.num = poissrnd(ue.density*env.area);  % the number of user equipments
-ue.points = unifrnd(-sqrt(env.area)/2,sqrt(env.area)/2,ue.num,2);   % the position of user equipments
-
-% figure
-% plot(ap.points(:,1),ap.points(:,2),'b^','MarkerSize',4)
-% hold on
-% plot(grid.points(:,1),grid.points(:,2),'ks','MarkerSize',4)
-% axis([-sqrt(env.area)/2,sqrt(env.area)/2,-sqrt(env.area)/2,sqrt(env.area)/2],'square')
-% legend('AP','grid');
-% 
-% figure
-% plot(ap.points(:,1),ap.points(:,2),'b^','MarkerSize',4)
-% hold on
-% plot(ue.points(:,1),ue.points(:,2),'ro','MarkerSize',4)
-% axis([-sqrt(env.area)/2,sqrt(env.area)/2,-sqrt(env.area)/2,sqrt(env.area)/2],'square')
-% legend('AP','UE');
-
-
-%% generating distance, pathloss and rssi
-for k = 1:grid.num
-    grid.dist(k,:) = 10^3*sqrt(sum((repmat(grid.points(k,:),ap.num,1)-ap.points).^2,2)).';  % the distance from the kth grid to all access points
-    grid.pathloss(k,grid.dist(k,:) <= env.dc(1)) = grid.dist(k,grid.dist(k,:) <= env.dc(1)).^(-0);  % the pathloss from the kth grid to all access points
-    grid.pathloss(k,grid.dist(k,:) > env.dc(1) & grid.dist(k,:) <= env.dc(2)) = env.dc(1)^2*grid.dist(k,grid.dist(k,:) > env.dc(1) & grid.dist(k,:) <= env.dc(2)).^(-2);
-    grid.pathloss(k,grid.dist(k,:) > env.dc(2)) = env.dc(1)^2*env.dc(2)^2*grid.dist(k,grid.dist(k,:) > env.dc(2)).^(-4);
-    grid.rssi(k,:) = grid.pathloss(k,:).*ap.tx_power;    % the rssi from the kth grid to all access points
-end
-
-for k = 1:ue.num
-    ue.dist(k,:) = 10^3*sqrt(sum((repmat(ue.points(k,:),ap.num,1)-ap.points).^2,2)).';  % the distance from the kth user equipment to all access points
-    ue.pathloss(k,ue.dist(k,:) <= env.dc(1)) = ue.dist(k,ue.dist(k,:) <= env.dc(1)).^(-0);  % the pathloss from the kth user equipment to all access points
-    ue.pathloss(k,ue.dist(k,:) > env.dc(1) & ue.dist(k,:) <= env.dc(2)) = env.dc(1)^2*ue.dist(k,ue.dist(k,:) > env.dc(1) & ue.dist(k,:) <= env.dc(2)).^(-2);
-    ue.pathloss(k,ue.dist(k,:) > env.dc(2)) = env.dc(1)^2*env.dc(2)^2*ue.dist(k,ue.dist(k,:) > env.dc(2)).^(-4);
-    ue.rssi(k,:) = ue.pathloss(k,:).*ap.tx_power;    % the rssi from the kth user equipment to all access points    
-end
-
-%% calculte the distance, rssi between every access point and the receiver node
-% for k = 1:ap.num
-%     receiver.dist(k,:) = 10^3*sqrt(sum(ap.points(k,:).^2)).';  % the distance from the kth access point to receiver node
-%     ue.pathloss(k,ue.dist(k,:) <= env.dc(1)) = ue.dist(k,ue.dist(k,:) <= env.dc(1)).^(-0);  % the pathloss from the kth access point to receiver node
-%     ue.pathloss(k,ue.dist(k,:) > env.dc(1) & ue.dist(k,:) <= env.dc(2)) = env.dc(1)^2*ue.dist(k,ue.dist(k,:) > env.dc(1) & ue.dist(k,:) <= env.dc(2)).^(-2);
-%     ue.pathloss(k,ue.dist(k,:) > env.dc(2)) = env.dc(1)^2*env.dc(2)^2*ue.dist(k,ue.dist(k,:) > env.dc(2)).^(-4);
-%     ue.rssi(k,:) = ue.pathloss(k,:).*ap.tx_power;    % the rssi from the kth access point to receiver node
-% end
-
-
-%% clear 
-% clear env;
-% clear k;
-
-%% get z and k for every ap
-Z = zeros(1, ap.num);
-K = zeros(1, ap.num);
-for k = 1:ap.num
-    x = log10(grid.dist(:,k).');  
-    y = grid.rssi(:,k).';
-    [Z(1,k), K(1,k)] = getRSSIParam(x, y);
-end
-
-Z
-K
-
-%% get every ap's reliability in offline
-% [ result, z_output, k_output ] = flc1( Z, K );
-
-
-%% get every ap's membership function of flc1 in offline
-membership_args = ones(ap.num, 9);
-%for k = 1:1  %grid.num
-for k = 1:1  
-    retval = run_pso(Z(1,k), K(1,k));
+% pso main program----------------------------------------------------start
+maxite=20;    % set maximum number of iteration
+maxrun=1;      % set maximum number of runs need to be
+for run=1:maxrun
+    %run
+    % pso initialization----------------------------------------------start
+    for i=1:n
+        for j=1:m
+            x0(i,j)=round(LB(j)+rand()*(UB(j)-LB(j)));  
+        end
+    end
     
-    membership_args(k,1) = 0;                % aL
-    membership_args(k,2) = retval(1,2);  % bL
-    membership_args(k,3) = retval(1,1);  % cL
-
-    membership_args(k,4) = retval(1,3);  % aM
-    membership_args(k,5) = 50;               % bM
-    membership_args(k,6) = retval(1,4);  % cM
-
-    membership_args(k,7) = retval(1,5);  % aH
-    membership_args(k,8) = retval(1,6);  % bH
-    membership_args(k,9) = 100;              % cH
+    x=x0;       % initial population   % position of every particle in pso
+    v=0.1*x0;   % initial velocity     % velocity of every particle in pso
+    for i=1:n
+        % f0(i,1)=ofun(x0(i,:));
+        f0(i,1)=pso_flc1_costfunction(x0(i,:), zn, kn);
+    end
+    [fmax0,index0]=max(f0);
+    pbest=x0;           % initial pbest
+    gbest=x0(index0,:); % initial gbest
+    % pso initialization------------------------------------------------end
     
-    % print
-    membership_args(k,:)
-end
+    % pso algorithm---------------------------------------------------
+    ite=1;
+    tolerance=1;
+    while ite<=maxite %&& tolerance>10^-12
 
-%% RSSI compute in online
-%for i=1:ue.num  % loccate every unknown node each for. here we think unknow node(paper) is ue
-for i=1:1  
-    unknow.points = ue.points(i,:);
-    [ unknown_node_location ] = online_stage( env, grid, unknow);    
+        %w=wmax-(wmax-wmin)*ite/maxite; % update inertial weight
+        w=inertia_weight;   % fix in paper
 
+        % pso velocity updates
+        for i=1:n
+            for j=1:m
+                v(i,j)=w*v(i,j)+c1*rand()*(pbest(i,j)-x(i,j))...
+                +c2*rand()*(gbest(1,j)-x(i,j));      % eq. 7
+            end
+        end
+        
+        % pso position update
+        for i=1:n
+            for j=1:m
+                x(i,j)=x(i,j)+v(i,j);
+            end
+        end
+        
+        % handling boundary violations
+        for i=1:n
+            for j=1:m
+                if x(i,j) < LB(j)
+                    x(i,j) = LB(j);
+                elseif x(i,j) > UB(j)
+                    x(i,j) = UB(j);
+                end
+            end
+        end
+         
+        % evaluating fitness
+        for i=1:n
+            f(i,1)=pso_flc1_costfunction(x(i,:), zn, kn);
+        end
+        
+        % updating pbest and fitness
+        % in papaer: the aim is to maximize node reliability
+        for i=1:n
+            if f(i,1)>f0(i,1)
+                pbest(i,:)=x(i,:);
+                f0(i,1)=f(i,1);
+            end
+        end
+        
+        [fmax,index]=max(f0);   % finding out the best particle: maximize node reliability
+        ffmax(ite,run)=fmax;    % storing best fitness
+        ffite(run)=ite;         % storing iteration count
+
+        % updating gbest and best fitness
+        if fmax>fmax0
+            gbest=pbest(index,:);
+            fmax0=fmax;
+        end
+        
+        % calculating tolerance
+%         if ite>100;
+%             tolerance=abs(ffmax(ite-100,run)-fmax0);
+%         end
+        
+        % displaying iterative results
+%         if ite==1
+%             disp(sprintf('Iteration Best particle Objective fun'));
+%         end
+%         disp(sprintf('%8g %8g %8.4f',ite,index,fmax0));
+        ite=ite+1;
+    end %% while end
     
-      
+    % pso algorithm-----------------------------------------------------end
+    
+    gbest;
+    %fvalue=10*(gbest(1)-1)^2+20*(gbest(2)-2)^2+30*(gbest(3)-3)^2;
+    fvalue=pso_flc1_costfunction(gbest, zn, kn);
+    fff(run)=fvalue;
+    rgbest(run,:)=gbest;
+%     disp(sprintf('--------------------------------------'));
+
 end
+% pso main program------------------------------------------------------end
+disp(sprintf('\n'));
+disp(sprintf('*********************************************************'));
+disp(sprintf('Final Results-----------------------------'));
+[bestfun,bestrun]=max(fff)
+best_variables=rgbest(bestrun,:)
+disp(sprintf('*********************************************************'));
+toc
+
+%% PSO convergence characteristic
+% plot(ffmax(1:ffite(bestrun),bestrun),'-k');
+% xlabel('Iteration');
+% ylabel('Fitness function value');
+% title('PSO convergence characteristic')
 
 
+plot(ffmax(1:ffite(1), 1),'-k');
+xlabel('Iteration');
+ylabel('Fitness function value');
+title('PSO convergence characteristic')
+
+%############################################################---------end
+
+end
