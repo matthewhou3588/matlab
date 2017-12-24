@@ -1,4 +1,5 @@
 function best_variables = run_pso(zn, kn) 
+%% each time optimize one anchor node
 tic
 clc
 %clear all
@@ -10,7 +11,8 @@ UB=[100 100 100 100 100 100 100 100 100 100 100 100];   %upper bounds of variabl
 
 % pso parameters values
 m=12;        % number of variables
-n=100;      % population size
+% n=100;      % population size
+n=5;      % population size
 inertia_weight = 0.73; 
 wmax=0.9;   % inertia weight
 wmin=0.4;   % inertia weight
@@ -19,7 +21,7 @@ c2=1.48;       % acceleration factor
 
 % pso main program----------------------------------------------------start
 maxite=20;    % set maximum number of iteration
-maxrun=10;      % set maximum number of runs need to be
+maxrun=1;      % set maximum number of runs need to be
 for run=1:maxrun
     %run
     % pso initialization----------------------------------------------start
@@ -43,7 +45,7 @@ for run=1:maxrun
     % pso algorithm---------------------------------------------------
     ite=1;
     tolerance=1;
-    while ite<=maxite && tolerance>10^-12
+    while ite<=maxite %&& tolerance>10^-12
 
         %w=wmax-(wmax-wmin)*ite/maxite; % update inertial weight
         w=inertia_weight;   % fix in paper
@@ -66,10 +68,10 @@ for run=1:maxrun
         % handling boundary violations
         for i=1:n
             for j=1:m
-                if x(i,j)<LB(j)
-                    x(i,j)=LB(j);
-                elseif x(i,j)>UB(j)
-                    x(i,j)=UB(j);
+                if x(i,j) < LB(j)
+                    x(i,j) = LB(j);
+                elseif x(i,j) > UB(j)
+                    x(i,j) = UB(j);
                 end
             end
         end
@@ -99,9 +101,9 @@ for run=1:maxrun
         end
         
         % calculating tolerance
-        if ite>100;
-            tolerance=abs(ffmax(ite-100,run)-fmax0);
-        end
+%         if ite>100;
+%             tolerance=abs(ffmax(ite-100,run)-fmax0);
+%         end
         
         % displaying iterative results
 %         if ite==1
@@ -109,14 +111,17 @@ for run=1:maxrun
 %         end
 %         disp(sprintf('%8g %8g %8.4f',ite,index,fmax0));
         ite=ite+1;
-    end
+    end %% while end
+    
     % pso algorithm-----------------------------------------------------end
+    
     gbest;
     %fvalue=10*(gbest(1)-1)^2+20*(gbest(2)-2)^2+30*(gbest(3)-3)^2;
     fvalue=pso_flc1_costfunction(gbest, zn, kn);
     fff(run)=fvalue;
     rgbest(run,:)=gbest;
 %     disp(sprintf('--------------------------------------'));
+
 end
 % pso main program------------------------------------------------------end
 disp(sprintf('\n'));
@@ -133,6 +138,11 @@ toc
 % ylabel('Fitness function value');
 % title('PSO convergence characteristic')
 
+
+plot(ffmax(1:ffite(1), 1),'-k');
+xlabel('Iteration');
+ylabel('Fitness function value');
+title('PSO convergence characteristic')
 
 %############################################################---------end
 
