@@ -1,4 +1,4 @@
-function [ sum_reliability] = pso_flc1_costfunction( input_args, z, k )
+function [ reliability] = pso_flc1_costfunction( input_args, z, k )
 % function [ sum_reliability, node_reliability ] = pso_flc1_costfunction( input_args, z, k )
 %pso_flc1_costfunction pso cost funtion for flc1
 %   input_args is 1*12 matrix
@@ -12,7 +12,6 @@ membership_args = ones(2,9);
 % rules_reliability_index from table II 
 rules_reliability_index = [0.025 0.05 0.1; 0.3 0.5 0.6; 0.7 0.9 1];
 
-reliability = ones(1, length(z));
 
 %% cL bL aM cM aH bH for z
 membership_args(1,1) = 0;                % aL
@@ -41,11 +40,10 @@ membership_args(2,8) = input_args(1,12);  % bH
 membership_args(2,9) = 100;              % cH
 
 %% 
-z_k = [z;k];   % just for 'for sentence'  convience
+z_k = [z;k];   % 2*1 matrix z_k(1,1) is z for the anchor node, z_k(2,1) is k for the anchor node
 
-for i=1:length(z)
     
-    fuzzy_linguistic = ones(2, 3);   
+fuzzy_linguistic = ones(2, 3);   
     
     for row = 1:2        % for z and k
        for index = 1:3   % for every low, medium, and high
@@ -53,18 +51,14 @@ for i=1:length(z)
           b = membership_args(row, index * 3 -1);
           c = membership_args(row, index * 3); 
           
-          fuzzy_linguistic(row, index) = membershipFunction(a, b, c, z_k(row, i));    
+          fuzzy_linguistic(row, index) = membershipFunction(a, b, c, z_k(row, 1));    
        end        
     end
     
     [~, z_index] = max(fuzzy_linguistic(1,:));
     [~, k_index] = max(fuzzy_linguistic(2,:));
     
-    reliability(1,i) = rules_reliability_index(z_index, k_index);  % node i's reliability    
-end
-
-sum_reliability = sum(reliability);
-node_reliability = reliability;
+reliability = rules_reliability_index(z_index, k_index);  % node i's reliability    
 
 end
 
