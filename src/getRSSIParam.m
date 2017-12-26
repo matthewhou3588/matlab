@@ -11,41 +11,16 @@ function [Z, K] = getRSSIParam(x, y)
 % Z = P(1,1);
 % K = P(1,2);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-b1 = x\y   % The \ operator performs a least-squares regression.
-yCalc1 = b1*x;
-scatter(x,y)
-hold on
-plot(x,yCalc1)
-xlabel('Population of state')
-ylabel('Fatal traffic accidents per state')
-title('Linear Regression Relation Between Accidents & Population')
-grid on
 
-%%%%%%%%%%
-% Improve the fit by including a y-intercept  in your model as 
 X = [ones(length(x),1) x];    
 b = X\y
 yCalc2 = X*b;
+scatter(x,y)
+hold on
 plot(x,yCalc2,'--')
-legend('Data','Slope','Slope & Intercept','Location','best');
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-n = length(x);
-x2=sum(x.^2);       % 求Σ(xi^2)  
-x1=sum(x);          % 求Σ(xi)  
-x1y1=sum(x.*y);     % 求Σ(xi*yi)  
-y1=sum(y);          % 求Σ(yi)  
-  
-a=(n*x1y1-x1*y1)/(n*x2-x1*x1);      %解出直线斜率b=(y1-a*x1)/n  
-b=(y1-a*x1)/n;                      %解出直线截距  
-
-Z = a;
-K = b;
+K = b(1,1);
+Z = b(2,1);
 
 % %作图  
 % % 先把原始数据点用蓝色十字描出来  
